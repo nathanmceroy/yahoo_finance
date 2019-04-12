@@ -1,0 +1,775 @@
+from bs4 import BeautifulSoup
+import requests
+import csv
+from selenium import webdriver
+from selenium.webdriver.common.keys import Keys
+from lxml.html import fromstring
+from time import sleep
+
+def main():
+
+    stocks_file = open('stocks_financials_append.csv', 'a')
+
+    # writting each column in the csv file
+    stocks_writer = csv.writer(stocks_file)
+    stocks_writer.writerow([
+                'Company', 'Company Arb', 'Total revenue 2018', 'Cost of revenue 2018', 'Gross profit 2018', 'Research development 2018', 'Selling general and administrative 2018', 'Non-recurring 2018', 'Other 2018', 'Total operating expenses 2018', 'operating income of loss 2018', 'Total other income/expenses net 2018', 'Earnings before interest and taxes 2018', 'Interest expense 2018', 'Income before tax 2018', 'Income tax expense 2018', 'Minority interest 2018', 'Net income from continuing ops 2018', 'Discontinued operations 2018', 'Extraordinary items 2018', 'Effect of account changes 2018', 'Other items 2018', 'Net income 2018', 'Preferred stock and other adjustments 2018', 'Net income applicable to common shares 2018',
+                'Total revenue 2017', 'Cost of revenue 2017', 'Gross profit 2017', 'Research development 2017', 'Selling general and administrative 2017', 'Non-recurring 2017', 'Other 2017', 'Total operating expenses 2017', 'operating income of loss 2017', 'Total other income/expenses net 2017', 'Earnings before interest and taxes 2017', 'Interest expense 2017', 'Income before tax 2017', 'Income tax expense 2017', 'Minority interest 2017', 'Net income from continuing ops 2017', 'Discontinued operations 2017', 'Extraordinary items 2017', 'Effect of account changes 2017', 'Other items 2017', 'Net income 2017', 'Preferred stock and other adjustments 2017', 'Net income applicable to common shares 2017',
+                'Total revenue 2016', 'Cost of revenue 2016', 'Gross profit 2016', 'Research development 2016', 'Selling general and administrative 2016', 'Non-recurring 2016', 'Other 2016', 'Total operating expenses 2016', 'operating income of loss 2016', 'Total other income/expenses net 2016', 'Earnings before interest and taxes 2016', 'Interest expense 2016', 'Income before tax 2016', 'Income tax expense 2016', 'Minority interest 2016', 'Net income from continuing ops 2016', 'Discontinued operations 2016', 'Extraordinary items 2016', 'Effect of account changes 2016', 'Other items 2016', 'Net income 2016', 'Preferred stock and other adjustments 2016', 'Net income applicable to common shares 2016',
+                'Total revenue 2015', 'Cost of revenue 2015', 'Gross profit 2015', 'Research development 2015', 'Selling general and administrative 2015', 'Non-recurring 2015', 'Other 2015', 'Total operating expenses 2015', 'operating income of loss 2015', 'Total other income/expenses net 2015', 'Earnings before interest and taxes 2015', 'Interest expense 2015', 'Income before tax 2015', 'Income tax expense 2015', 'Minority interest 2015', 'Net income from continuing ops 2015', 'Discontinued operations 2015', 'Extraordinary items 2015', 'Effect of account changes 2015', 'Other items 2015', 'Net income 2015', 'Preferred stock and other adjustments 2015', 'Net income applicable to common shares 2015',
+    ])
+
+    driver = webdriver.Chrome()
+
+    path = 'ASXListedCompanies.csv'
+
+    file = open(path, newline='')
+    reader = csv.reader(file)
+
+    #assigning the data into a variable. 
+    data = [row for row in reader]
+
+    #creating empty list to append with the company codes
+    company_codes = []
+
+    #count for what number of the for loop we are on.
+    count = 0
+
+    #count to apply to data[num][1] so we iterate and grab each company code we start at 3 to not grab any headers
+    num = 3
+
+    #looping through each code and appending to our list (total of 2230)
+    while num <= 2230:
+        if num == 1887 or num == 1888 or num == 1889:
+            num += 1
+            continue
+        else:
+            company_codes.append(data[num][1])
+            num += 1
+
+    #Creating list of all the urls for each company to iterate through 
+    company_urls = []
+    for item in company_codes:
+        company_urls.append(f'https://au.finance.yahoo.com/quote/{item}.AX/financials?p={item}.AX')
+        
+
+    for url in company_urls:
+        driver.get(url)
+        source = driver.page_source
+
+        soup = BeautifulSoup(source, 'lxml')
+
+        sleep(4)
+
+
+        #Grabbing company name and company arb from h1 tag
+        try:
+            header = soup.find('h1').text
+            company = header[:-8]
+            company_arb = header[-7:-4]
+            count +=1
+        except:
+            print('No information of header')
+            count +=1
+            continue
+
+        #print company name and company arb
+        print(f'Company name  -  {company}')
+        print(f'Company Code  -  {company_arb}')
+       
+        # grab table information whether table reactid is 29 or 31.
+        for reactid in (29, 31):
+          try:
+              tree = fromstring(driver.page_source)
+              table = tree.xpath(f'//table[@data-reactid="{reactid}"]')[0]
+          except:
+              continue
+
+        #append each table rows to list
+        list1 = []
+        for row in table.xpath('.//tr'):
+            income = row.xpath('.//text()')
+            list1.append(income)
+
+
+
+        #total revenue 2018 - 2015
+        print()
+        print('Total revenue')
+
+        try:
+            total_revenue_EOF18 = list1[1][1]
+            print(f'2018  -  {total_revenue_EOF18}')
+        except:
+            total_revenue_EOF18 = '-'
+            print('No information for 2018')
+        try:
+            total_revenue_EOF17 = list1[1][2]
+            print(f'2017  -  {total_revenue_EOF17}')
+        except:
+            total_revenue_EOF17 = '-'
+            print('No information for 2017')
+        try:
+            total_revenue_EOF16 = list1[1][3]
+            print(f'2016  -  {total_revenue_EOF16}')
+        except:
+            total_revenue_EOF16 = '-'
+            print('No information for 2016')
+        try:
+            total_revenue_EOF15 = list1[1][4]
+            print(f'2015  -  {total_revenue_EOF15}')
+        except:
+            total_revenue_EOF15 = '-'
+            print('No information for 2015.')
+
+        # cost of revenue 2018 - 2015
+        print()
+        print('Cost of revenue')
+
+        try:
+            cost_of_revenue_EOF18 = list1[2][1]
+            print(f'2018  -  {cost_of_revenue_EOF18}')
+        except:
+            cost_of_revenue_EOF18 = '-'
+            print('No information for 2018')
+        try:
+            cost_of_revenue_EOF17 = list1[2][2]
+            print(f'2017  -  {cost_of_revenue_EOF17}')
+        except:
+            cost_of_revenue_EOF17 = '-'
+            print('No information for 2017')
+        try:
+            cost_of_revenue_EOF16 = list1[2][3]
+            print(f'2016  -  {cost_of_revenue_EOF16}')
+        except:
+            cost_of_revenue_EOF16 = '-'
+            print('No information for 2016')
+        try:
+            cost_of_revenue_EOF15 = list1[2][4]
+            print(f'2015  -  {cost_of_revenue_EOF15}')
+        except:
+            cost_of_revenue_EOF15 = '-'
+            print('No information for 2015.')
+
+        # gross profit 2018 - 2015
+        print()
+        print('Gross Profit')
+
+        try:
+            gross_profit_EOF18 = list1[3][1]
+            print(f'2018  -  {gross_profit_EOF18}')
+        except:
+            gross_profit_EOF18 = '-'
+            print('No information for 2018')
+        try:
+            gross_profit_EOF17 = list1[3][2]
+            print(f'2017  -  {gross_profit_EOF17}')
+        except:
+            gross_profit_EOF17 = '-'
+            print('No information for 2017')
+        try:
+            gross_profit_EOF16 = list1[3][3]
+            print(f'2016  -  {gross_profit_EOF16}')
+        except:
+            gross_profit_EOF16 = '-'
+            print('No information for 2016')
+        try:
+            gross_profit_EOF15 = list1[3][4]
+            print(f'2015  -  {gross_profit_EOF15}')
+        except:
+            gross_profit_EOF15 = '-'
+            print('No information for 2015.')
+
+
+        # research developent 2018 - 2015
+        print()
+        print('Research development')
+
+        try:
+            research_development_EOF18 = list1[5][1]
+            print(f'2018  -  {research_development_EOF18}')
+        except:
+            research_development_EOF18 = '-'
+            print('No information for 2017')
+        try:
+            research_development_EOF17 = list1[5][2]
+            print(f'2017  -  {research_development_EOF17}')
+        except:
+            research_development_EOF17 = '-'
+            print('No information for 2017')
+        try:
+            research_development_EOF16 = list1[5][3]
+            print(f'2016  -  {research_development_EOF16}')
+        except:
+            research_development_EOF16 = '-'
+            print('No information for 2016')
+        try:
+            research_development_EOF15 = list1[5][4]
+            print(f'2015  -  {research_development_EOF15}')
+        except:
+            research_development_EOF15 = '-'
+            print('No information for 2015.')
+
+        # selling general and administrative 2018 - 2015
+        print()
+        print('Selling general and administrative')
+
+        try:
+            selling_general_and_administrative_EOF18 = list1[6][1]
+            print(f'2018  -  {selling_general_and_administrative_EOF18}')
+        except:
+            selling_general_and_administrative_EOF18 = '-'
+            print('No information for 2018')
+        try:
+            selling_general_and_administrative_EOF17 = list1[6][2]
+            print(f'2017  -  {selling_general_and_administrative_EOF17}')
+        except:
+            selling_general_and_administrative_EOF17 = '-'
+            print('No information for 2017')
+        try:
+            selling_general_and_administrative_EOF16 = list1[6][3]
+            print(f'2016  -  {selling_general_and_administrative_EOF16}')
+        except:
+            selling_general_and_administrative_EOF16 = '-'
+            print('No information for 2016')
+        try:
+            selling_general_and_administrative_EOF15 = list1[6][4]
+            print(f'2015  -  {selling_general_and_administrative_EOF15}')
+        except:
+            selling_general_and_administrative_EOF15 = '-'
+            print('No information for 2015.')
+
+        # non recurring 2018 - 2015
+        print()
+        print('Non recurring')
+
+        try:
+            non_recurring_EOF18 = list1[7][1]
+            print(f'2018  -  {non_recurring_EOF18}')
+        except:
+            non_recurring_EOF18 = '-'
+            print('No information for 2018')
+        try:
+            non_recurring_EOF17 = list1[7][2]
+            print(f'2017  -  {non_recurring_EOF17}')
+        except:
+            non_recurring_EOF17 = '-'
+            print('No information for 2017')
+        try:
+            non_recurring_EOF16 = list1[7][3]
+            print(f'2016  -  {non_recurring_EOF16}')
+        except:
+            non_recurring_EOF16 = '-'
+            print('No information for 2016')
+        try:
+            non_recurring_EOF15 = list1[7][4]
+            print(f'2015  -  {non_recurring_EOF15}')
+        except:
+            non_recurring_EOF15 = '-'
+            print('No information for 2015.')
+        
+        # others 2018 - 2015
+        print()
+        print('Others')
+
+        try:
+            others_EOF18 = list1[8][1]
+            print(f'2018  -  {others_EOF18}')
+        except:
+            others_EOF18 = '-'
+            print('No information for 2018')
+        try:
+            others_EOF17 = list1[8][2]
+            print(f'2017  -  {others_EOF17}')
+        except:
+            others_EOF17 = '-'
+            print('No information for 2017')
+        try:
+            others_EOF16 = list1[8][3]
+            print(f'2016  -  {others_EOF16}')
+        except:
+            others_EOF16 = '-'
+            print('No information for 2016')
+        try:
+            others_EOF15 = list1[8][4]
+            print(f'2015  -  {others_EOF15}')
+        except:
+            others_EOF15 = '-'
+            print('No information for 2015.')
+
+        # total operating expenses 2018 - 2015  
+        print()
+        print('Total operating expenses')
+
+        try:
+            total_operating_expenses_EOF18 = list1[9][1]
+            print(f'2018  -  {total_operating_expenses_EOF18}')
+        except:
+            total_operating_expenses_EOF18 = '-'
+            print('No information for 2018')    
+        try:
+            total_operating_expenses_EOF17 = list1[9][2]
+            print(f'2017  -  {total_operating_expenses_EOF17}')
+        except:
+            total_operating_expenses_EOF17 = '-'
+            print('No information for 2017')
+        try:
+            total_operating_expenses_EOF16 = list1[9][3]
+            print(f'2016  -  {total_operating_expenses_EOF16}')
+        except:
+            total_operating_expenses_EOF16 = '-'
+            print('No information for 2016')
+        
+        try:
+            total_operating_expenses_EOF15 = list1[9][4]
+            print(f'2015  -  {total_operating_expenses_EOF15}')
+        except:
+            total_operating_expenses_EOF15 = '-'
+            print('No information for 2015.')
+
+        # operating income or lost 2018 - 2015
+        print()
+        print('Operating income or loss')
+
+        try:
+            operating_income_or_loss_EOF18 = list1[10][1]
+            print(f'2018  -  {operating_income_or_loss_EOF18}')
+        except:
+            operating_income_or_loss_EOF18 = '-'
+            print('No information for 2018')
+        try:    
+            operating_income_or_loss_EOF17 = list1[10][2]
+            print(f'2017  -  {operating_income_or_loss_EOF17}')
+        except:
+            operating_income_or_loss_EOF17 = '-'
+            print('No information for 2017')
+        try:
+            operating_income_or_loss_EOF16 = list1[10][3]
+            print(f'2016  -  {operating_income_or_loss_EOF16}')
+        except:
+            operating_income_or_loss_EOF16 = '-'
+            print('No information for 2016')
+        try:
+            operating_income_or_loss_EOF15 = list1[10][4]
+            print(f'2015  -  {operating_income_or_loss_EOF15}')
+        except:
+            operating_income_or_loss_EOF15 = '-'
+            print('No information for 2015')
+
+        # total other income and loss net 2018 - 2015
+        print()
+        print('Total other income/expeses net')
+
+        try:
+            total_other_income_and_loss_net_EOF18 = list1[12][1]
+            print(f'2018  -  {total_other_income_and_loss_net_EOF18}')
+        except:
+            total_other_income_and_loss_net_EOF18 = '-'
+            print('No information for 2018')
+        try:    
+            total_other_income_and_loss_net_EOF17 = list1[12][2]
+            print(f'2017  -  {total_other_income_and_loss_net_EOF17}')
+        except:
+            total_other_income_and_loss_net_EOF17 = '-'
+            print('No information for 2017')
+        try:
+            total_other_income_and_loss_net_EOF16 = list1[12][3]
+            print(f'2016  -  {total_other_income_and_loss_net_EOF16}')
+        except:
+            total_other_income_and_loss_net_EOF16 = '-'
+            print('No information for 2016')
+        try:
+            total_other_income_and_loss_net_EOF15 = list1[12][4]
+            print(f'2015  -  {total_other_income_and_loss_net_EOF15}')
+        except:
+            total_other_income_and_loss_net_EOF15 = '-'
+            print('No information for 2015')
+
+        # earning before interest and taxes 2018 - 2015
+        print()
+        print('Earnings before interest and taxes')
+
+        try:
+            earnings_before_interest_and_taxes_EOF18 = list1[13][1]
+            print(f'2018  -  {operating_income_or_loss_EOF18}')
+        except:
+            earnings_before_interest_and_taxes_EOF18 = '-'
+            print('No information for 2018')
+        try:    
+            earnings_before_interest_and_taxes_EOF17 = list1[13][2]
+            print(f'2017  -  {earnings_before_interest_and_taxes_EOF17}')
+        except:
+            earnings_before_interest_and_taxes_EOF17 = '-'
+            print('No information for 2017')
+        try:
+            earnings_before_interest_and_taxes_EOF16 = list1[13][3]
+            print(f'2016  -  {earnings_before_interest_and_taxes_EOF16}')
+        except:
+            earnings_before_interest_and_taxes_EOF16 = '-'
+            print('No information for 2016')
+        try:
+            earnings_before_interest_and_taxes_EOF15 = list1[13][4]
+            print(f'2015  -  {earnings_before_interest_and_taxes_EOF15}')
+        except:
+            earnings_before_interest_and_taxes_EOF15 = '-'
+            print('No information for 2015')
+
+        # interest expense 2018 - 2015
+        print()
+        print('Interest expense')
+
+        try:
+            interest_expense_EOF18 = list1[14][1]
+            print(f'2018  -  {interest_expense_EOF18}')
+        except:
+            interest_expense_EOF18 = '-'
+            print('No information for 2018')
+        try:    
+            interest_expense_EOF17 = list1[14][2]
+            print(f'2017  -  {interest_expense_EOF17}')
+        except:
+            interest_expense_EOF17 = '-'
+            print('No information for 2017')
+        try:
+            interest_expense_EOF16 = list1[14][3]
+            print(f'2016  -  {interest_expense_EOF16}')
+        except:
+            interest_expense_EOF16 = '-'
+            print('No information for 2016')
+        try:
+            interest_expense_EOF15 = list1[14][4]
+            print(f'2015  -  {interest_expense_EOF15}')
+        except:
+            interest_expense_EOF15 = '-'
+            print('No information for 2015')
+
+        #income before tax 2018 - 2015
+        print()
+        print('Income before tax')
+
+        try:
+            income_before_tax_EOF18 = list1[15][1]
+            print(f'2018  -  {income_before_tax_EOF18}')
+        except:
+            income_before_tax_EOF18 = '-'
+            print('No information for 2018')
+        try:    
+            income_before_tax_EOF17 = list1[15][2]
+            print(f'2017  -  {income_before_tax_EOF17}')
+        except:
+            income_before_tax_EOF17 = '-'
+            print('No information for 2017')
+        try:
+            income_before_tax_EOF16 = list1[15][3]
+            print(f'2016  -  {income_before_tax_EOF16}')
+        except:
+            income_before_tax_EOF16 = '-'
+            print('No information for 2016')
+        try:
+            income_before_tax_EOF15 = list1[15][4]
+            print(f'2015  -  {income_before_tax_EOF15}')
+        except:
+            income_before_tax_EOF15 = '-'
+            print('No information for 2015')
+
+        # income tax expense 2018 - 2015
+        print()
+        print('Income tax expense')
+
+        try:
+            income_tax_expense_EOF18 = list1[16][1]
+            print(f'2018  -  {income_tax_expense_EOF18}')
+        except:
+            income_tax_expense_EOF18 = '-'
+            print('No information for 2018')
+        try:    
+            income_tax_expense_EOF17 = list1[16][2]
+            print(f'2017  -  {income_tax_expense_EOF17}')
+        except:
+            income_tax_expense_EOF17 = '-'
+            print('No information for 2017')
+        try:
+            income_tax_expense_EOF16 = list1[16][3]
+            print(f'2016  -  {income_tax_expense_EOF16}')
+        except:
+            income_tax_expense_EOF16 = '-'
+            print('No information for 2016')
+        try:
+            income_tax_expense_EOF15 = list1[16][4]
+            print(f'2015  -  {income_tax_expense_EOF15}')
+        except:
+            income_tax_expense_EOF15 = '-'
+            print('No information for 2015')
+
+        # minority interest 2018 - 2015
+        print()
+        print('Minority interest')
+
+        try:
+            minority_interest_EOF18 = list1[17][1]
+            print(f'2018  -  {minority_interest_EOF18}')
+        except:
+            minority_interest_EOF18 = '-'
+            print('No information for 2018')
+        try:    
+            minority_interest_EOF17 = list1[17][2]
+            print(f'2017  -  {minority_interest_EOF17}')
+        except:
+            minority_interest_EOF17 = '-'
+            print('No information for 2017')
+        try:
+            minority_interest_EOF16 = list1[17][3]
+            print(f'2016  -  {minority_interest_EOF16}')
+        except:
+            minority_interest_EOF16 = '-'
+            print('No information for 2016')
+        try:
+            minority_interest_EOF15 = list1[17][4]
+            print(f'2015  -  {minority_interest_EOF15}')
+        except:
+            minority_interest_EOF15 = '-'
+            print('No information for 2015')
+
+        # net income from continueing ops 2018 - 2015
+        print()
+        print('Net income from continuing ops')
+
+        try:
+            net_income_from_continuing_ops_EOF18 = list1[18][1]
+            print(f'2018  -  {net_income_from_continuing_ops_EOF18}')
+        except:
+            net_income_from_continuing_ops_EOF18 = '-'
+            print('No information for 2018')
+        try:    
+            net_income_from_continuing_ops_EOF17 = list1[18][2]
+            print(f'2017  -  {net_income_from_continuing_ops_EOF17}')
+        except:
+            net_income_from_continuing_ops_EOF17 = '-'
+            print('No information for 2017')
+        try:
+            net_income_from_continuing_ops_EOF16 = list1[18][3]
+            print(f'2016  -  {net_income_from_continuing_ops_EOF16}')
+        except:
+            net_income_from_continuing_ops_EOF16 = '-'
+            print('No information for 2016')
+        try:
+            net_income_from_continuing_ops_EOF15 = list1[18][4]
+            print(f'2015  -  {net_income_from_continuing_ops_EOF15}')
+        except:
+            net_income_from_continuing_ops_EOF15 = '-'
+            print('No information for 2015')
+
+        # discontinued operations 2018 - 2015
+        print()
+        print('Discontinued operations')
+        try:
+            discontinued_operations_EOF18 = list1[20][1]
+            print(f'2018  -  {discontinued_operations_EOF18}')
+        except:
+            discontinued_operations_EOF18 = '-'
+            print('No information for 2015')
+        try:
+            discontinued_operations_EOF17 = list1[20][2]
+            print(f'2017  -  {discontinued_operations_EOF17}')
+        except:
+            discontinued_operations_EOF17 = '-'
+            print('No information for 2015')
+        try:        
+            discontinued_operations_EOF16 = list1[20][3]
+            print(f'2016  -  {discontinued_operations_EOF16}')
+        except:
+            discontinued_operations_EOF16 = '-'
+            print('No information for 2015')
+        try:
+            discontinued_operations_EOF15 = list1[20][4]
+            print(f'2015  -  {discontinued_operations_EOF15}')
+        except:
+            discontinued_operations_EOF15 = '-'
+            print('No information for 2015')
+
+        # extraordinary items 2018 - 2015
+        print()
+        print('Extraordinary items')
+        try:
+            extraordinary_items_EOF18 = list1[21][1]
+            print(f'2018  -  {extraordinary_items_EOF18}')
+        except:
+            extraordinary_items_EOF18 = '-'
+            print('No information for 2015')
+        try:
+            extraordinary_items_EOF17 = list1[21][2]
+            print(f'2017  -  {extraordinary_items_EOF17}')
+        except:
+            extraordinary_items_EOF17 = '-'
+            print('No information for 2015')
+        try:        
+            extraordinary_items_EOF16 = list1[21][3]
+            print(f'2016  -  {extraordinary_items_EOF16}')
+        except:
+            extraordinary_items_EOF16 = '-'
+            print('No information for 2015')
+        try:
+            extraordinary_items_EOF15 = list1[21][4]
+            print(f'2015  -  {extraordinary_items_EOF15}')
+        except:
+            extraordinary_items_EOF15 = '-'
+            print('No information for 2015')
+
+        #effect of accounting changes 2018 - 2015
+        print()
+        print('Effect of accounting changes')
+        try:
+            effect_of_accounting_changes_EOF18 = list1[22][1]
+            print(f'2018  -  {effect_of_accounting_changes_EOF18}')
+        except:
+            effect_of_accounting_changes_EOF18 = '-'
+            print('No information for 2015')
+        try:
+            effect_of_accounting_changes_EOF17 = list1[22][2]
+            print(f'2017  -  {effect_of_accounting_changes_EOF17}')
+        except:
+            effect_of_accounting_changes_EOF17 = '-'
+            print('No information for 2015')
+        try:        
+            effect_of_accounting_changes_EOF16 = list1[22][3]
+            print(f'2016  -  {effect_of_accounting_changes_EOF16}')
+        except:
+            effect_of_accounting_changes_EOF16 = '-'
+            print('No information for 2015')
+        try:
+            effect_of_accounting_changes_EOF15 = list1[22][4]
+            print(f'2015  -  {effect_of_accounting_changes_EOF15}')
+        except:
+            effect_of_accounting_changes_EOF15 = '-'
+            print('No information for 2015')
+
+        # other items 2018 - 2015
+        print()
+        print('Other items')
+        try:
+            other_items_EOF18 = list1[23][1]
+            print(f'2018  -  {other_items_EOF18}')
+        except:
+            other_items_EOF18 = '-'
+            print('No information for 2015')
+        try:
+            other_items_EOF17 = list1[23][2]
+            print(f'2017  -  {other_items_EOF17}')
+        except:
+            other_items_EOF17 = '-'
+            print('No information for 2015')
+        try:        
+            other_items_EOF16 = list1[23][3]
+            print(f'2016  -  {other_items_EOF16}')
+        except:
+            other_items_EOF16 = '-'
+            print('No information for 2015')
+        try:
+            other_items_EOF15 = list1[23][4]
+            print(f'2015  -  {other_items_EOF15}')
+        except:
+            other_items_EOF15 = '-'
+            print('No information for 2015')
+
+        # net income 2018 - 2015
+        print()
+        print('Net income')
+        try:
+            net_income_EOF18 = list1[25][1]
+            print(f'2018  -  {net_income_EOF18}')
+        except:
+            net_income_EOF18 = '-'
+            print('No information for 2015')
+        try:
+            net_income_EOF17 = list1[25][2]
+            print(f'2017  -  {net_income_EOF17}')
+        except:
+            net_income_EOF17 = '-'
+            print('No information for 2015')
+        try:        
+            net_income_EOF16 = list1[25][3]
+            print(f'2016  -  {net_income_EOF16}')
+        except:
+            net_income_EOF16 = '-'
+            print('No information for 2015')
+        try:
+            net_income_EOF15 = list1[25][4]
+            print(f'2015  -  {net_income_EOF15}')
+        except:
+            net_income_EOF15 = '-'
+            print('No information for 2015')
+
+        # preferred stock and other adjustments 2018 - 2015
+        print()
+        print('preferred stock and other adjustments')
+        try:
+            preferred_stock_and_other_adjustments_EOF18 = list1[26][1]
+            print(f'2018  -  {preferred_stock_and_other_adjustments_EOF18}')
+        except:
+            preferred_stock_and_other_adjustments_EOF18 = '-'
+            print('No information for 2015')
+        try:
+            preferred_stock_and_other_adjustments_EOF17 = list1[26][2]
+            print(f'2017  -  {preferred_stock_and_other_adjustments_EOF17}')
+        except:
+            preferred_stock_and_other_adjustments_EOF17 = '-'
+            print('No information for 2015')
+        try:        
+            preferred_stock_and_other_adjustments_EOF16 = list1[26][3]
+            print(f'2016  -  {preferred_stock_and_other_adjustments_EOF16}')
+        except:
+            preferred_stock_and_other_adjustments_EOF16 = '-'
+            print('No information for 2015')
+        try:
+            preferred_stock_and_other_adjustments_EOF15 = list1[26][4]
+            print(f'2015  -  {preferred_stock_and_other_adjustments_EOF15}')
+        except:
+            preferred_stock_and_other_adjustments_EOF15 = '-'
+            print('No information for 2015')
+
+        # net income applicable to common shares 2018 - 2015
+        print()
+        print('Net income applicable to common shares')
+        try:
+            net_income_applicable_to_common_shares_EOF18 = list1[27][1]
+            print(f'2018  -  {net_income_applicable_to_common_shares_EOF18}')
+        except:
+            net_income_applicable_to_common_shares_EOF18 = '-'
+            print('No information for 2015')
+        try:
+            net_income_applicable_to_common_shares_EOF17 = list1[27][2]
+            print(f'2017  -  {net_income_applicable_to_common_shares_EOF17}')
+        except:
+            net_income_applicable_to_common_shares_EOF17 = '-'
+            print('No information for 2015')
+        try:        
+            net_income_applicable_to_common_shares_EOF16 = list1[27][3]
+            print(f'2016  -  {net_income_applicable_to_common_shares_EOF16}')
+        except:
+            net_income_applicable_to_common_shares_EOF16 = '-'
+            print('No information for 2015')
+        try:
+            net_income_applicable_to_common_shares_EOF15 = list1[27][4]
+            print(f'2015  -  {net_income_applicable_to_common_shares_EOF15}')
+        except:
+            net_income_applicable_to_common_shares_EOF15 = '-'
+            print('No information for 2015')
+
+
+        print()
+        print(count)
+        print('=====================')
+        print()
+            
+        # writing the information to each column in the csv file.   
+        stocks_writer.writerow([company, company_arb, 
+        total_revenue_EOF18, cost_of_revenue_EOF18, gross_profit_EOF18, research_development_EOF18, selling_general_and_administrative_EOF18, non_recurring_EOF18, others_EOF18, total_operating_expenses_EOF18, operating_income_or_loss_EOF18, total_other_income_and_loss_net_EOF18, earnings_before_interest_and_taxes_EOF18, interest_expense_EOF18, income_before_tax_EOF18, income_tax_expense_EOF18, minority_interest_EOF18, net_income_from_continuing_ops_EOF18  , discontinued_operations_EOF18, extraordinary_items_EOF18, effect_of_accounting_changes_EOF18, other_items_EOF18, net_income_EOF18, preferred_stock_and_other_adjustments_EOF18, net_income_applicable_to_common_shares_EOF18,
+        total_revenue_EOF17, cost_of_revenue_EOF17, gross_profit_EOF17, research_development_EOF17, selling_general_and_administrative_EOF17, non_recurring_EOF17, others_EOF17, total_operating_expenses_EOF17, operating_income_or_loss_EOF17, total_other_income_and_loss_net_EOF17, earnings_before_interest_and_taxes_EOF17, interest_expense_EOF17, income_before_tax_EOF17, income_tax_expense_EOF17, minority_interest_EOF17, net_income_from_continuing_ops_EOF17  , discontinued_operations_EOF17, extraordinary_items_EOF17, effect_of_accounting_changes_EOF17, other_items_EOF17, net_income_EOF17, preferred_stock_and_other_adjustments_EOF17, net_income_applicable_to_common_shares_EOF17,
+        total_revenue_EOF16, cost_of_revenue_EOF16, gross_profit_EOF16, research_development_EOF16, selling_general_and_administrative_EOF16, non_recurring_EOF16, others_EOF16, total_operating_expenses_EOF16, operating_income_or_loss_EOF16, total_other_income_and_loss_net_EOF16, earnings_before_interest_and_taxes_EOF16, interest_expense_EOF16, income_before_tax_EOF16, income_tax_expense_EOF16, minority_interest_EOF16, net_income_from_continuing_ops_EOF16  , discontinued_operations_EOF16, extraordinary_items_EOF16, effect_of_accounting_changes_EOF16, other_items_EOF16, net_income_EOF16, preferred_stock_and_other_adjustments_EOF16, net_income_applicable_to_common_shares_EOF16,
+        total_revenue_EOF15, cost_of_revenue_EOF15, gross_profit_EOF15, research_development_EOF15, selling_general_and_administrative_EOF15, non_recurring_EOF15, others_EOF15, total_operating_expenses_EOF15, operating_income_or_loss_EOF15, total_other_income_and_loss_net_EOF15, earnings_before_interest_and_taxes_EOF15, interest_expense_EOF15, income_before_tax_EOF15, income_tax_expense_EOF15, minority_interest_EOF15, net_income_from_continuing_ops_EOF15  , discontinued_operations_EOF15, extraordinary_items_EOF15, effect_of_accounting_changes_EOF15, other_items_EOF15, net_income_EOF15, preferred_stock_and_other_adjustments_EOF15, net_income_applicable_to_common_shares_EOF15,
+        ])
+
+
+#Stop code from running in jyupter notebooks automatically 
+if __name__ == '__main__':
+    main()
