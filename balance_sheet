@@ -1,0 +1,1096 @@
+from bs4 import BeautifulSoup
+import requests
+import csv
+from selenium import webdriver
+from selenium.webdriver.common.keys import Keys
+from lxml.html import fromstring
+from time import sleep, time
+
+
+def main():
+
+    stocks_file = open('Balance_sheet.csv', 'a')
+
+    stocks_writer = csv.writer(stocks_file)
+    stocks_writer.writerow([ 'Company', 'Company Arb',
+        'cash and cash equivalents 2018', 'short term investments 2018', 'Net receivables 2018', 'inventory 2018', 'other current assets 2018', 'total current assets 2018', 'long term investments 2018', 'property plant and equipment 2018', 'goodwill 2018', 'intangible assets 2018', 'accumulated amortisation 2018', 'other assets 2018', 'defferred long term asset charges 2018', 'total assets 2018', 'accounts payable 2018', 'short and current long term debt 2018', 'other current liabilities 2018', 'total current liabilities 2018', 'long term debt 2018', 'other liabilities 2018', 'deferred long term liability charges 2018', 'minority interest 2018', 'negative goodwill 2018', 'total liabilities 2018', 'misc stock options warrants 2018', 'redeemable preferred stock 2018', 'preferred stock 2018', 'common stock 2018', 'retained earnings 2018', 'treasury stock 2018', 'capital surplus 2018', 'other stockholder equity 2018', 'total stockholder equity 2018', 'net tangible assets 2018',
+        'cash and cash equivalents 2017', 'short term investments 2017', 'Net receivables 2017', 'inventory 2017', 'other current assets 2017', 'total current assets 2017', 'long term investments 2017', 'property plant and equipment 2017', 'goodwill 2017', 'intangible assets 2017', 'accumulated amortisation 2017', 'other assets 2017', 'defferred long term asset charges 2017', 'total assets 2017', 'accounts payable 2017', 'short and current long term debt 2017', 'other current liabilities 2017', 'total current liabilities 2017', 'long term debt 2017', 'other liabilities 2017', 'deferred long term liability charges 2017', 'minority interest 2017', 'negative goodwill 2017', 'total liabilities 2017', 'misc stock options warrants 2017', 'redeemable preferred stock 2017', 'preferred stock 2017', 'common stock 2017', 'retained earnings 2017', 'treasury stock 2017', 'capital surplus 2017', 'other stockholder equity 2017', 'total stockholder equity 2017', 'net tangible assets 2017',
+        'cash and cash equivalents 2016', 'short term investments 2016', 'Net receivables 2016', 'inventory 2016', 'other current assets 2016', 'total current assets 2016', 'long term investments 2016', 'property plant and equipment 2016', 'goodwill 2016', 'intangible assets 2016', 'accumulated amortisation 2016', 'other assets 2016', 'defferred long term asset charges 2016', 'total assets 2016', 'accounts payable 2016', 'short and current long term debt 2016', 'other current liabilities 2016', 'total current liabilities 2016', 'long term debt 2016', 'other liabilities 2016', 'deferred long term liability charges 2016', 'minority interest 2016', 'negative goodwill 2016', 'total liabilities 2016', 'misc stock options warrants 2016', 'redeemable preferred stock 2016', 'preferred stock 2016', 'common stock 2016', 'retained earnings 2016', 'treasury stock 2016', 'capital surplus 2016', 'other stockholder equity 2016', 'total stockholder equity 2016', 'net tangible assets 2016',
+        'cash and cash equivalents 2015', 'short term investments 2015', 'Net receivables 2015', 'inventory 2015', 'other current assets 2015', 'total current assets 2015', 'long term investments 2015', 'property plant and equipment 2015', 'goodwill 2015', 'intangible assets 2015', 'accumulated amortisation 2015', 'other assets 2015', 'defferred long term asset charges 2015', 'total assets 2015', 'accounts payable 2015', 'short and current long term debt 2015', 'other current liabilities 2015', 'total current liabilities 2015', 'long term debt 2015', 'other liabilities 2015', 'deferred long term liability charges 2015', 'minority interest 2015', 'negative goodwill 2015', 'total liabilities 2015', 'misc stock options warrants 2015', 'redeemable preferred stock 2015', 'preferred stock 2015', 'common stock 2015', 'retained earnings 2015', 'treasury stock 2015', 'capital surplus 2015', 'other stockholder equity 2015', 'total stockholder equity 2015', 'net tangible assets 2015',
+ ])
+
+    driver = webdriver.Chrome()
+
+    #creating variable for the csv file
+    path = 'ASXListedCompanies.csv'
+
+    #opening csv file "path" 
+    file = open(path, newline='')
+    reader = csv.reader(file)
+
+    #assigning the data into a variable. 
+    data = [row for row in reader]
+
+    #creating empty list to append with the company codes
+    company_codes = []
+
+
+    count = 0
+
+    #count to apply to data[num][1] so we iterate and grab each company code we start at 3 to not grab any headers
+    num = 3
+
+    #looping through each code and appending to our list (total of 2231)
+    while num <= 2230:
+        if num == 1887 or num == 1888 or num == 1889:
+            num += 1
+            continue
+        else:
+            company_codes.append(data[num][1])
+            num += 1
+
+    #Creating list of all the urls for each company to iterate through 
+    company_urls = []
+    for item in company_codes:
+        company_urls.append(f'https://au.finance.yahoo.com/quote/{item}.AX/balance-sheet?')
+
+
+    for url in company_urls:
+        driver.get(url)
+        source = driver.page_source
+
+        soup = BeautifulSoup(source, 'lxml')
+
+        sleep(4)
+
+        try:
+            header = soup.find('h1').text
+            company = header[:-8]
+            company_arb = header[-7:-4]
+            count += 1
+        except:
+            print('No information of header')
+            count += 1
+            continue
+
+        print(f'Company name  -  {company}')
+        print(f'Company Code  -  {company_arb}')
+        
+
+        table = None
+        for reactid in (29, 31):
+          try:
+              tree = fromstring(driver.page_source)
+              table = tree.xpath(f'//table[@data-reactid="{reactid}"]')[0]
+          except:
+              continue
+              
+        list1 = []
+        for row in table.xpath('.//tr'):
+            income = row.xpath('.//text()')
+            list1.append(income)
+
+        print()
+        print('Cash and cash equivalents')
+
+        try:
+            cash_and_cash_equivalents_EOF18 = list1[2][1]
+            print(f'2018  -  {cash_and_cash_equivalents_EOF18}')
+        except:
+            cash_and_cash_equivalents_EOF18 = '-'
+            print('No information for 2018')
+        
+        try:
+            cash_and_cash_equivalents_EOF17 = list1[2][2]
+            print(f'2017  -  {cash_and_cash_equivalents_EOF17}')
+        except:
+            cash_and_cash_equivalents_EOF17 = '-'
+            print('No information for 2017')
+        
+        try:
+            cash_and_cash_equivalents_EOF16 = list1[2][3]
+            print(f'2016  -  {cash_and_cash_equivalents_EOF16}')
+        except:
+            cash_and_cash_equivalents_EOF16 = '-'
+            print('No information for 2016')
+        
+        try:
+            cash_and_cash_equivalents_EOF15 = list1[2][4]
+            print(f'2015  -  {cash_and_cash_equivalents_EOF15}')
+        except:
+            cash_and_cash_equivalents_EOF15 = '-'
+            print('No information for 2015.')
+
+        print()
+        print('Short-term investments')
+
+        try:
+            short_term_investments_EOF18 = list1[3][1]
+            print(f'2018  -  {short_term_investments_EOF18}')
+        except:
+            short_term_investments_EOF18 = '-'
+            print('No information for 2018')
+        
+        try:
+            short_term_investments_EOF17 = list1[3][2]
+            print(f'2017  -  {short_term_investments_EOF17}')
+        except:
+            short_term_investments_EOF17 = '-'
+            print('No information for 2017')
+        
+        try:
+            short_term_investments_EOF16 = list1[3][3]
+            print(f'2016  -  {short_term_investments_EOF16}')
+        except:
+            short_term_investments_EOF16 = '-'
+            print('No information for 2016')
+        
+        try:
+            short_term_investments_EOF15 = list1[3][4]
+            print(f'2015  -  {short_term_investments_EOF15}')
+        except:
+            short_term_investments_EOF15 = '-'
+            print('No information for 2015.')
+
+
+        print()
+        print('Net receivables')
+
+        try:
+            Net_receivables_EOF18 = list1[4][1]
+            print(f'2018  -  {Net_receivables_EOF18}')
+        except:
+            Net_receivables_EOF18 = '-'
+            print('No information for 2018')
+        
+        try:
+            Net_receivables_EOF17 = list1[4][2]
+            print(f'2017  -  {Net_receivables_EOF17}')
+        except:
+            Net_receivables_EOF17 = '-'
+            print('No information for 2017')
+        
+        try:
+            Net_receivables_EOF16 = list1[4][3]
+            print(f'2016  -  {Net_receivables_EOF16}')
+        except:
+            Net_receivables_EOF16 = '-'
+            print('No information for 2016')
+        
+        try:
+            Net_receivables_EOF15 = list1[4][4]
+            print(f'2015  -  {Net_receivables_EOF15}')
+        except:
+            Net_receivables_EOF15 = '-'
+            print('No information for 2015.')
+
+
+
+        print()
+        print('Inventory')
+
+        try:
+            inventory_EOF18 = list1[5][1]
+            print(f'2018  -  {inventory_EOF18}')
+        except:
+            inventory_EOF18 = '-'
+            print('No information for 2017')
+        
+        try:
+            inventory_EOF17 = list1[5][2]
+            print(f'2017  -  {inventory_EOF17}')
+        except:
+            inventory_EOF17 = '-'
+            print('No information for 2017')
+        
+        try:
+            inventory_EOF16 = list1[5][3]
+            print(f'2016  -  {inventory_EOF16}')
+        except:
+            inventory_EOF16 = '-'
+            print('No information for 2016')
+        
+        try:
+            inventory_EOF15 = list1[5][4]
+            print(f'2015  -  {inventory_EOF15}')
+        except:
+            inventory_EOF15 = '-'
+            print('No information for 2015.')
+
+        print()
+        print('Other current assets')
+
+        try:
+            other_current_assets_EOF18 = list1[6][1]
+            print(f'2018  -  {other_current_assets_EOF18}')
+        except:
+            other_current_assets_EOF18 = '-'
+            print('No information for 2018')
+        
+        try:
+            other_current_assets_EOF17 = list1[6][2]
+            print(f'2017  -  {other_current_assets_EOF17}')
+        except:
+            other_current_assets_EOF17 = '-'
+            print('No information for 2017')
+        
+        try:
+            other_current_assets_EOF16 = list1[6][3]
+            print(f'2016  -  {other_current_assets_EOF16}')
+        except:
+            other_current_assets_EOF16 = '-'
+            print('No information for 2016')
+        
+        try:
+            other_current_assets_EOF15 = list1[6][4]
+            print(f'2015  -  {other_current_assets_EOF15}')
+        except:
+            other_current_assets_EOF15 = '-'
+            print('No information for 2015.')
+
+        print()
+        print('Total current assets')
+
+        try:
+            total_current_assets_EOF18 = list1[7][1]
+            print(f'2018  -  {total_current_assets_EOF18}')
+        except:
+            total_current_assets_EOF18 = '-'
+            print('No information for 2018')
+        
+        try:
+            total_current_assets_EOF17 = list1[7][2]
+            print(f'2017  -  {total_current_assets_EOF17}')
+        except:
+            total_current_assets_EOF17 = '-'
+            print('No information for 2017')
+        
+        try:
+            total_current_assets_EOF16 = list1[7][3]
+            print(f'2016  -  {total_current_assets_EOF16}')
+        except:
+            total_current_assets_EOF16 = '-'
+            print('No information for 2016')
+        
+        try:
+            total_current_assets_EOF15 = list1[7][4]
+            print(f'2015  -  {total_current_assets_EOF15}')
+        except:
+            total_current_assets_EOF15 = '-'
+            print('No information for 2015.')
+        
+        print()
+        print('Long-term investments')
+
+        try:
+            long_term_investments_EOF18 = list1[8][1]
+            print(f'2018  -  {long_term_investments_EOF18}')
+        except:
+            long_term_investments_EOF18 = '-'
+            print('No information for 2018')
+        
+        try:
+            long_term_investments_EOF17 = list1[8][2]
+            print(f'2017  -  {long_term_investments_EOF17}')
+        except:
+            long_term_investments_EOF17 = '-'
+            print('No information for 2017')
+        
+        try:
+            long_term_investments_EOF16 = list1[8][3]
+            print(f'2016  -  {long_term_investments_EOF16}')
+        except:
+            long_term_investments_EOF16 = '-'
+            print('No information for 2016')
+        
+        try:
+            long_term_investments_EOF15 = list1[8][4]
+            print(f'2015  -  {long_term_investments_EOF15}')
+        except:
+            long_term_investments_EOF15 = '-'
+            print('No information for 2015.')
+
+        print()
+        print('Property plant and equipment')
+
+        try:
+            property_plant_and_equipment_EOF18 = list1[9][1]
+            print(f'2018  -  {property_plant_and_equipment_EOF18}')
+        except:
+            property_plant_and_equipment_EOF18 = '-'
+            print('No information for 2018')
+        
+        try:
+            property_plant_and_equipment_EOF17 = list1[9][2]
+            print(f'2017  -  {property_plant_and_equipment_EOF17}')
+        except:
+            property_plant_and_equipment_EOF17 = '-'
+            print('No information for 2017')
+        
+        try:
+            property_plant_and_equipment_EOF16 = list1[9][3]
+            print(f'2016  -  {property_plant_and_equipment_EOF16}')
+        except:
+            property_plant_and_equipment_EOF16 = '-'
+            print('No information for 2016')
+        
+        try:
+            property_plant_and_equipment_EOF15 = list1[9][4]
+            print(f'2015  -  {property_plant_and_equipment_EOF15}')
+        except:
+            property_plant_and_equipment_EOF15 = '-'
+            print('No information for 2015.')
+
+
+        print()
+        print('Goodwill')
+
+        try:
+            goodwill_EOF18 = list1[10][1]
+            print(f'2018  -  {goodwill_EOF18}')
+        except:
+            goodwill_EOF18 = '-'
+            print('No information for 2018')
+        try:    
+            goodwill_EOF17 = list1[10][2]
+            print(f'2017  -  {goodwill_EOF17}')
+        except:
+            goodwill_EOF17 = '-'
+            print('No information for 2017')
+        try:
+            goodwill_EOF16 = list1[10][3]
+            print(f'2016  -  {goodwill_EOF16}')
+        except:
+            goodwill_EOF16 = '-'
+            print('No information for 2016')
+        try:
+            goodwill_EOF15 = list1[10][4]
+            print(f'2015  -  {goodwill_EOF15}')
+        except:
+            goodwill_EOF15 = '-'
+            print('No information for 2015')
+
+
+        print()
+        print('Intangible assets')
+
+        try:
+            intangible_assets_EOF18 = list1[11][1]
+            print(f'2018  -  {intangible_assets_EOF18}')
+        except:
+            intangible_assets_EOF18 = '-'
+            print('No information for 2018')
+        try:    
+            intangible_assets_EOF17 = list1[11][2]
+            print(f'2017  -  {intangible_assets_EOF17}')
+        except:
+            intangible_assets_EOF17 = '-'
+            print('No information for 2017')
+        try:
+            intangible_assets_EOF16 = list1[11][3]
+            print(f'2016  -  {intangible_assets_EOF16}')
+        except:
+            intangible_assets_EOF16 = '-'
+            print('No information for 2016')
+        try:
+            intangible_assets_EOF15 = list1[11][4]
+            print(f'2015  -  {intangible_assets_EOF15}')
+        except:
+            intangible_assets_EOF15 = '-'
+            print('No information for 2015')
+
+
+        print()
+        print('Accumulated amortisation')
+
+        try:
+            accumulated_amortisation_EOF18 = list1[12][1]
+            print(f'2018  -  {accumulated_amortisation_EOF18}')
+        except:
+            accumulated_amortisation_EOF18 = '-'
+            print('No information for 2018')
+        try:    
+            accumulated_amortisation_EOF17 = list1[12][2]
+            print(f'2017  -  {accumulated_amortisation_EOF17}')
+        except:
+            accumulated_amortisation_EOF17 = '-'
+            print('No information for 2017')
+        try:
+            accumulated_amortisation_EOF16 = list1[12][3]
+            print(f'2016  -  {accumulated_amortisation_EOF16}')
+        except:
+            accumulated_amortisation_EOF16 = '-'
+            print('No information for 2016')
+        try:
+            accumulated_amortisation_EOF15 = list1[12][4]
+            print(f'2015  -  {accumulated_amortisation_EOF15}')
+        except:
+            accumulated_amortisation_EOF15 = '-'
+            print('No information for 2015')
+
+
+        print()
+        print('Other assets')
+
+        try:
+            other_assets_EOF18 = list1[13][1]
+            print(f'2018  -  {other_assets_EOF18}')
+        except:
+            other_assets_EOF18 = '-'
+            print('No information for 2018')
+        try:    
+            other_assets_EOF17 = list1[13][2]
+            print(f'2017  -  {other_assets_EOF17}')
+        except:
+            other_assets_EOF17 = '-'
+            print('No information for 2017')
+        try:
+            other_assets_EOF16 = list1[13][3]
+            print(f'2016  -  {other_assets_EOF16}')
+        except:
+            other_assets_EOF16 = '-'
+            print('No information for 2016')
+        try:
+            other_assets_EOF15 = list1[13][4]
+            print(f'2015  -  {other_assets_EOF15}')
+        except:
+            other_assets_EOF15 = '-'
+            print('No information for 2015')
+
+
+        print()
+        print('Defferred long term asset charges')
+
+        try:
+            defferred_long_term_asset_charges_EOF18 = list1[14][1]
+            print(f'2018  -  {defferred_long_term_asset_charges_EOF18}')
+        except:
+            defferred_long_term_asset_charges_EOF18 = '-'
+            print('No information for 2018')
+        try:    
+            defferred_long_term_asset_charges_EOF17 = list1[14][2]
+            print(f'2017  -  {defferred_long_term_asset_charges_EOF17}')
+        except:
+            defferred_long_term_asset_charges_EOF17 = '-'
+            print('No information for 2017')
+        try:
+            defferred_long_term_asset_charges_EOF16 = list1[14][3]
+            print(f'2016  -  {defferred_long_term_asset_charges_EOF16}')
+        except:
+            defferred_long_term_asset_charges_EOF16 = '-'
+            print('No information for 2016')
+        try:
+            defferred_long_term_asset_charges_EOF15 = list1[14][4]
+            print(f'2015  -  {defferred_long_term_asset_charges_EOF15}')
+        except:
+            defferred_long_term_asset_charges_EOF15 = '-'
+            print('No information for 2015')
+
+
+        print()
+        print('Total assets')
+
+        try:
+            total_assets_EOF18 = list1[15][1]
+            print(f'2018  -  {total_assets_EOF18}')
+        except:
+            total_assets_EOF18 = '-'
+            print('No information for 2018')
+        try:    
+            total_assets_EOF17 = list1[15][2]
+            print(f'2017  -  {total_assets_EOF17}')
+        except:
+            total_assets_EOF17 = '-'
+            print('No information for 2017')
+        try:
+            total_assets_EOF16 = list1[15][3]
+            print(f'2016  -  {total_assets_EOF16}')
+        except:
+            total_assets_EOF16 = '-'
+            print('No information for 2016')
+        try:
+            total_assets_EOF15 = list1[15][4]
+            print(f'2015  -  {total_assets_EOF15}')
+        except:
+            total_assets_EOF15 = '-'
+            print('No information for 2015')
+
+
+        print()
+        print('Accounts payable')
+
+        try:
+            accounts_payable_EOF18 = list1[17][1]
+            print(f'2018  -  {accounts_payable_EOF18}')
+        except:
+            accounts_payable_EOF18 = '-'
+            print('No information for 2018')
+        try:    
+            accounts_payable_EOF17 = list1[17][2]
+            print(f'2017  -  {accounts_payable_EOF17}')
+        except:
+            accounts_payable_EOF17 = '-'
+            print('No information for 2017')
+        try:
+            accounts_payable_EOF16 = list1[17][3]
+            print(f'2016  -  {accounts_payable_EOF16}')
+        except:
+            accounts_payable_EOF16 = '-'
+            print('No information for 2016')
+        try:
+            accounts_payable_EOF15 = list1[17][4]
+            print(f'2015  -  {accounts_payable_EOF15}')
+        except:
+            accounts_payable_EOF15 = '-'
+            print('No information for 2015')
+
+
+        print()
+        print('Short and current long-term debt')
+
+        try:
+            short_and_current_long_term_debt_EOF18 = list1[18][1]
+            print(f'2018  -  {short_and_current_long_term_debt_EOF18}')
+        except:
+            short_and_current_long_term_debt_EOF18 = '-'
+            print('No information for 2018')
+        try:    
+            short_and_current_long_term_debt_EOF17 = list1[18][2]
+            print(f'2017  -  {short_and_current_long_term_debt_EOF17}')
+        except:
+            short_and_current_long_term_debt_EOF17 = '-'
+            print('No information for 2017')
+        try:
+            short_and_current_long_term_debt_EOF16 = list1[18][3]
+            print(f'2016  -  {short_and_current_long_term_debt_EOF16}')
+        except:
+            short_and_current_long_term_debt_EOF16 = '-'
+            print('No information for 2016')
+        try:
+            short_and_current_long_term_debt_EOF15 = list1[18][4]
+            print(f'2015  -  {short_and_current_long_term_debt_EOF15}')
+        except:
+            short_and_current_long_term_debt_EOF15 = '-'
+            print('No information for 2015')
+
+
+        print()
+        print('Other current liabilities')
+        try:
+            other_current_liabilities_EOF18 = list1[19][1]
+            print(f'2018  -  {other_current_liabilities_EOF18}')
+        except:
+            other_current_liabilities_EOF18 = '-'
+            print('No information for 2018')
+        try:
+            other_current_liabilities_EOF17 = list1[19][2]
+            print(f'2017  -  {other_current_liabilities_EOF17}')
+        except:
+            other_current_liabilities_EOF17 = '-'
+            print('No information for 2017')
+        try:        
+            other_current_liabilities_EOF16 = list1[19][3]
+            print(f'2016  -  {other_current_liabilities_EOF16}')
+        except:
+            other_current_liabilities_EOF16 = '-'
+            print('No information for 2016')
+        try:
+            other_current_liabilities_EOF15 = list1[19][4]
+            print(f'2015  -  {other_current_liabilities_EOF15}')
+        except:
+            other_current_liabilities_EOF15 = '-'
+            print('No information for 2015')
+
+
+        print()
+        print('Total current liabilities')
+        try:
+            total_current_liabilities_EOF18 = list1[20][1]
+            print(f'2018  -  {total_current_liabilities_EOF18}')
+        except:
+            total_current_liabilities_EOF18 = '-'
+            print('No information for 2018')
+        try:
+            total_current_liabilities_EOF17 = list1[20][2]
+            print(f'2017  -  {total_current_liabilities_EOF17}')
+        except:
+            total_current_liabilities_EOF17 = '-'
+            print('No information for 2017')
+        try:        
+            total_current_liabilities_EOF16 = list1[20][3]
+            print(f'2016  -  {total_current_liabilities_EOF16}')
+        except:
+            total_current_liabilities_EOF16 = '-'
+            print('No information for 2016')
+        try:
+            total_current_liabilities_EOF15 = list1[20][4]
+            print(f'2015  -  {total_current_liabilities_EOF15}')
+        except:
+            total_current_liabilities_EOF15 = '-'
+            print('No information for 2015')
+
+
+        print()
+        print('Long-term debt')
+        try:
+            long_term_debt_EOF18 = list1[21][1]
+            print(f'2018  -  {long_term_debt_EOF18}')
+        except:
+            long_term_debt_EOF18 = '-'
+            print('No information for 2018')
+        try:
+            long_term_debt_EOF17 = list1[21][2]
+            print(f'2017  -  {long_term_debt_EOF17}')
+        except:
+            long_term_debt_EOF17 = '-'
+            print('No information for 2017')
+        try:        
+            long_term_debt_EOF16 = list1[21][3]
+            print(f'2016  -  {long_term_debt_EOF16}')
+        except:
+            long_term_debt_EOF16 = '-'
+            print('No information for 2016')
+        try:
+            long_term_debt_EOF15 = list1[21][4]
+            print(f'2015  -  {long_term_debt_EOF15}')
+        except:
+            long_term_debt_EOF15 = '-'
+            print('No information for 2015')
+
+
+        print()
+        print('Other liabilities')
+        try:
+            other_liabilities_EOF18 = list1[22][1]
+            print(f'2018  -  {other_liabilities_EOF18}')
+        except:
+            other_liabilities_EOF18 = '-'
+            print('No information for 2018')
+        try:
+            other_liabilities_EOF17 = list1[22][2]
+            print(f'2017  -  {other_liabilities_EOF17}')
+        except:
+            other_liabilities_EOF17 = '-'
+            print('No information for 2017')
+        try:        
+            other_liabilities_EOF16 = list1[22][3]
+            print(f'2016  -  {other_liabilities_EOF16}')
+        except:
+            other_liabilities_EOF16 = '-'
+            print('No information for 2016')
+        try:
+            other_liabilities_EOF15 = list1[22][4]
+            print(f'2015  -  {other_liabilities_EOF15}')
+        except:
+            other_liabilities_EOF15 = '-'
+            print('No information for 2015')
+
+
+        print()
+        print('Deferred long term liability charges')
+        try:
+            deferred_long_term_liability_charges_EOF18 = list1[23][1]
+            print(f'2018  -  {deferred_long_term_liability_charges_EOF18}')
+        except:
+            deferred_long_term_liability_charges_EOF18 = '-'
+            print('No information for 2018')
+        try:
+            deferred_long_term_liability_charges_EOF17 = list1[23][2]
+            print(f'2017  -  {deferred_long_term_liability_charges_EOF17}')
+        except:
+            deferred_long_term_liability_charges_EOF17 = '-'
+            print('No information for 2017')
+        try:        
+            deferred_long_term_liability_charges_EOF16 = list1[23][3]
+            print(f'2016  -  {deferred_long_term_liability_charges_EOF16}')
+        except:
+            deferred_long_term_liability_charges_EOF16 = '-'
+            print('No information for 2016')
+        try:
+            deferred_long_term_liability_charges_EOF15 = list1[23][4]
+            print(f'2015  -  {deferred_long_term_liability_charges_EOF15}')
+        except:
+            deferred_long_term_liability_charges_EOF15 = '-'
+            print('No information for 2015')
+
+    
+        print()
+        print('Minority interest')
+        try:
+            minority_interest_EOF18 = list1[24][1]
+            print(f'2018  -  {minority_interest_EOF18}')
+        except:
+            minority_interest_EOF18 = '-'
+            print('No information for 2018')
+        try:
+            minority_interest_EOF17 = list1[24][2]
+            print(f'2017  -  {minority_interest_EOF17}')
+        except:
+            minority_interest_EOF17 = '-'
+            print('No information for 2017')
+        try:        
+            minority_interest_EOF16 = list1[24][3]
+            print(f'2016  -  {minority_interest_EOF16}')
+        except:
+            minority_interest_EOF16 = '-'
+            print('No information for 2016')
+        try:
+            minority_interest_EOF15 = list1[24][4]
+            print(f'2015  -  {minority_interest_EOF15}')
+        except:
+            minority_interest_EOF15 = '-'
+            print('No information for 2015')
+
+
+        print()
+        print('Negative goodwill')
+        try:
+            negative_goodwill_EOF18 = list1[25][1]
+            print(f'2018  -  {negative_goodwill_EOF18}')
+        except:
+            negative_goodwill_EOF18 = '-'
+            print('No information for 2018')
+        try:
+            negative_goodwill_EOF17 = list1[25][2]
+            print(f'2017  -  {negative_goodwill_EOF17}')
+        except:
+            negative_goodwill_EOF17 = '-'
+            print('No information for 2017')
+        try:        
+            negative_goodwill_EOF16 = list1[25][3]
+            print(f'2016  -  {negative_goodwill_EOF16}')
+        except:
+            negative_goodwill_EOF16 = '-'
+            print('No information for 2016')
+        try:
+            negative_goodwill_EOF15 = list1[25][4]
+            print(f'2015  -  {negative_goodwill_EOF15}')
+        except:
+            negative_goodwill_EOF15 = '-'
+            print('No information for 2015')
+
+
+        print()
+        print('Total liabilities')
+        try:
+            total_liabilities_EOF18 = list1[26][1]
+            print(f'2018  -  {total_liabilities_EOF18}')
+        except:
+            total_liabilities_EOF18 = '-'
+            print('No information for 2018')
+        try:
+            total_liabilities_EOF17 = list1[26][2]
+            print(f'2017  -  {total_liabilities_EOF17}')
+        except:
+            total_liabilities_EOF17 = '-'
+            print('No information for 2017')
+        try:        
+            total_liabilities_EOF16 = list1[26][3]
+            print(f'2016  -  {total_liabilities_EOF16}')
+        except:
+            total_liabilities_EOF16 = '-'
+            print('No information for 2016')
+        try:
+            total_liabilities_EOF15 = list1[26][4]
+            print(f'2015  -  {total_liabilities_EOF15}')
+        except:
+            total_liabilities_EOF15 = '-'
+            print('No information for 2015')
+
+
+        print()
+        print('Misc stock options warrants')
+        try:
+            misc_stock_options_warrants_EOF18 = list1[28][1]
+            print(f'2018  -  {misc_stock_options_warrants_EOF18}')
+        except:
+            misc_stock_options_warrants_EOF18 = '-'
+            print('No information for 2018')
+        try:
+            misc_stock_options_warrants_EOF17 = list1[28][2]
+            print(f'2017  -  {misc_stock_options_warrants_EOF17}')
+        except:
+            misc_stock_options_warrants_EOF17 = '-'
+            print('No information for 2017')
+        try:        
+            misc_stock_options_warrants_EOF16 = list1[28][3]
+            print(f'2016  -  {misc_stock_options_warrants_EOF16}')
+        except:
+            misc_stock_options_warrants_EOF16 = '-'
+            print('No information for 2016')
+        try:
+            misc_stock_options_warrants_EOF15 = list1[28][4]
+            print(f'2015  -  {misc_stock_options_warrants_EOF15}')
+        except:
+            misc_stock_options_warrants_EOF15 = '-'
+            print('No information for 2015')
+
+
+        print()
+        print('Redeemable preferred stock')
+        try:
+            redeemable_preferred_stock_EOF18 = list1[29][1]
+            print(f'2018  -  {redeemable_preferred_stock_EOF18}')
+        except:
+            redeemable_preferred_stock_EOF18 = '-'
+            print('No information for 2018')
+        try:
+            redeemable_preferred_stock_EOF17 = list1[29][2]
+            print(f'2017  -  {redeemable_preferred_stock_EOF17}')
+        except:
+            redeemable_preferred_stock_EOF17 = '-'
+            print('No information for 2017')
+        try:        
+            redeemable_preferred_stock_EOF16 = list1[29][3]
+            print(f'2016  -  {redeemable_preferred_stock_EOF16}')
+        except:
+            redeemable_preferred_stock_EOF16 = '-'
+            print('No information for 2016')
+        try:
+            redeemable_preferred_stock_EOF15 = list1[29][4]
+            print(f'2015  -  {redeemable_preferred_stock_EOF15}')
+        except:
+            redeemable_preferred_stock_EOF15 = '-'
+            print('No information for 2015')
+
+
+        print()
+        print('Preferred stock')
+        try:
+            preferred_stock_EOF18 = list1[30][1]
+            print(f'2018  -  {preferred_stock_EOF18}')
+        except:
+            preferred_stock_EOF18 = '-'
+            print('No information for 2018')
+        try:
+            preferred_stock_EOF17 = list1[30][2]
+            print(f'2017  -  {preferred_stock_EOF17}')
+        except:
+            preferred_stock_EOF17 = '-'
+            print('No information for 2017')
+        try:        
+            preferred_stock_EOF16 = list1[30][3]
+            print(f'2016  -  {preferred_stock_EOF16}')
+        except:
+            preferred_stock_EOF16 = '-'
+            print('No information for 2016')
+        try:
+            preferred_stock_EOF15 = list1[30][4]
+            print(f'2015  -  {preferred_stock_EOF15}')
+        except:
+            preferred_stock_EOF15 = '-'
+            print('No information for 2015')
+
+
+        print()
+        print('Common stock')
+        try:
+            common_stock_EOF18 = list1[31][1]
+            print(f'2018  -  {common_stock_EOF18}')
+        except:
+            common_stock_EOF18 = '-'
+            print('No information for 2018')
+        try:
+            common_stock_EOF17 = list1[31][2]
+            print(f'2017  -  {common_stock_EOF17}')
+        except:
+            common_stock_EOF17 = '-'
+            print('No information for 2017')
+        try:        
+            common_stock_EOF16 = list1[31][3]
+            print(f'2016  -  {common_stock_EOF16}')
+        except:
+            common_stock_EOF16 = '-'
+            print('No information for 2016')
+        try:
+            common_stock_EOF15 = list1[31][4]
+            print(f'2015  -  {common_stock_EOF15}')
+        except:
+            common_stock_EOF15 = '-'
+            print('No information for 2015')
+
+
+        print()
+        print('Retained earnings')
+        try:
+            retained_earnings_EOF18 = list1[32][1]
+            print(f'2018  -  {retained_earnings_EOF18}')
+        except:
+            retained_earnings_EOF18 = '-'
+            print('No information for 2018')
+        try:
+            retained_earnings_EOF17 = list1[32][2]
+            print(f'2017  -  {retained_earnings_EOF17}')
+        except:
+            retained_earnings_EOF17 = '-'
+            print('No information for 2017')
+        try:        
+            retained_earnings_EOF16 = list1[32][3]
+            print(f'2016  -  {retained_earnings_EOF16}')
+        except:
+            retained_earnings_EOF16 = '-'
+            print('No information for 2016')
+        try:
+            retained_earnings_EOF15 = list1[32][4]
+            print(f'2015  -  {retained_earnings_EOF15}')
+        except:
+            retained_earnings_EOF15 = '-'
+            print('No information for 2015')
+
+
+        print()
+        print('Treasury stock')
+        try:
+            treasury_stock_EOF18 = list1[33][1]
+            print(f'2018  -  {treasury_stock_EOF18}')
+        except:
+            treasury_stock_EOF18 = '-'
+            print('No information for 2018')
+        try:
+            treasury_stock_EOF17 = list1[33][2]
+            print(f'2017  -  {treasury_stock_EOF17}')
+        except:
+            treasury_stock_EOF17 = '-'
+            print('No information for 2017')
+        try:        
+            treasury_stock_EOF16 = list1[33][3]
+            print(f'2016  -  {treasury_stock_EOF16}')
+        except:
+            treasury_stock_EOF16 = '-'
+            print('No information for 2016')
+        try:
+            treasury_stock_EOF15 = list1[33][4]
+            print(f'2015  -  {treasury_stock_EOF15}')
+        except:
+            treasury_stock_EOF15 = '-'
+            print('No information for 2015')
+
+
+        print()
+        print('Capital surplus')
+        try:
+            capital_surplus_EOF18 = list1[34][1]
+            print(f'2018  -  {capital_surplus_EOF18}')
+        except:
+            capital_surplus_EOF18 = '-'
+            print('No information for 2018')
+        try:
+            capital_surplus_EOF17 = list1[34][2]
+            print(f'2017  -  {capital_surplus_EOF17}')
+        except:
+            capital_surplus_EOF17 = '-'
+            print('No information for 2017')
+        try:        
+            capital_surplus_EOF16 = list1[34][3]
+            print(f'2016  -  {capital_surplus_EOF16}')
+        except:
+            capital_surplus_EOF16 = '-'
+            print('No information for 2016')
+        try:
+            capital_surplus_EOF15 = list1[34][4]
+            print(f'2015  -  {capital_surplus_EOF15}')
+        except:
+            capital_surplus_EOF15 = '-'
+            print('No information for 2015')
+
+
+
+        print()
+        print('Other stockholder equity')
+        try:
+            other_stockholder_equity_EOF18 = list1[35][1]
+            print(f'2018  -  {other_stockholder_equity_EOF18}')
+        except:
+            other_stockholder_equity_EOF18 = '-'
+            print('No information for 2018')
+        try:
+            other_stockholder_equity_EOF17 = list1[35][2]
+            print(f'2017  -  {other_stockholder_equity_EOF17}')
+        except:
+            other_stockholder_equity_EOF17 = '-'
+            print('No information for 2017')
+        try:        
+            other_stockholder_equity_EOF16 = list1[35][3]
+            print(f'2016  -  {other_stockholder_equity_EOF16}')
+        except:
+            other_stockholder_equity_EOF16 = '-'
+            print('No information for 2016')
+        try:
+            other_stockholder_equity_EOF15 = list1[35][4]
+            print(f'2015  -  {other_stockholder_equity_EOF15}')
+        except:
+            other_stockholder_equity_EOF15 = '-'
+            print('No information for 2015')
+
+
+        print()
+        print('Total stockholder equity')
+        try:
+            total_stockholder_equity_EOF18 = list1[36][1]
+            print(f'2018  -  {total_stockholder_equity_EOF18}')
+        except:
+            total_stockholder_equity_EOF18 = '-'
+            print('No information for 2018')
+        try:
+            total_stockholder_equity_EOF17 = list1[36][2]
+            print(f'2017  -  {total_stockholder_equity_EOF17}')
+        except:
+            total_stockholder_equity_EOF17 = '-'
+            print('No information for 2017')
+        try:        
+            total_stockholder_equity_EOF16 = list1[36][3]
+            print(f'2016  -  {total_stockholder_equity_EOF16}')
+        except:
+            total_stockholder_equity_EOF16 = '-'
+            print('No information for 2016')
+        try:
+            total_stockholder_equity_EOF15 = list1[36][4]
+            print(f'2015  -  {total_stockholder_equity_EOF15}')
+        except:
+            total_stockholder_equity_EOF15 = '-'
+            print('No information for 2015')
+
+
+        print()
+        print('Net tangible assets')
+        try:
+            net_tangible_assets_EOF18 = list1[37][1]
+            print(f'2018  -  {net_tangible_assets_EOF18}')
+        except:
+            net_tangible_assets_EOF18 = '-'
+            print('No information for 2018')
+        try:
+            net_tangible_assets_EOF17 = list1[37][2]
+            print(f'2017  -  {net_tangible_assets_EOF17}')
+        except:
+            net_tangible_assets_EOF17 = '-'
+            print('No information for 2017')
+        try:        
+            net_tangible_assets_EOF16 = list1[37][3]
+            print(f'2016  -  {net_tangible_assets_EOF16}')
+        except:
+            net_tangible_assets_EOF16 = '-'
+            print('No information for 2016')
+        try:
+            net_tangible_assets_EOF15 = list1[37][4]
+            print(f'2015  -  {net_tangible_assets_EOF15}')
+        except:
+            net_tangible_assets_EOF15 = '-'
+            print('No information for 2015')
+
+        print()
+        print(count)
+        print('=====================')
+        print()
+            
+        stocks_writer.writerow([company, company_arb, 
+        cash_and_cash_equivalents_EOF18, short_term_investments_EOF18, Net_receivables_EOF18, inventory_EOF18, other_current_assets_EOF18, total_current_assets_EOF18, long_term_investments_EOF18, property_plant_and_equipment_EOF18, goodwill_EOF18, intangible_assets_EOF18, accumulated_amortisation_EOF18, other_assets_EOF18, defferred_long_term_asset_charges_EOF18, total_assets_EOF18, accounts_payable_EOF18, short_and_current_long_term_debt_EOF18, other_current_liabilities_EOF18, total_current_liabilities_EOF18, long_term_debt_EOF18, other_liabilities_EOF18, deferred_long_term_liability_charges_EOF18, minority_interest_EOF18, negative_goodwill_EOF18, total_liabilities_EOF18, misc_stock_options_warrants_EOF18, redeemable_preferred_stock_EOF18, preferred_stock_EOF18, common_stock_EOF18, retained_earnings_EOF18, treasury_stock_EOF18, capital_surplus_EOF18, other_stockholder_equity_EOF18, total_stockholder_equity_EOF18, net_tangible_assets_EOF18,
+        cash_and_cash_equivalents_EOF17, short_term_investments_EOF17, Net_receivables_EOF17, inventory_EOF17, other_current_assets_EOF17, total_current_assets_EOF17, long_term_investments_EOF17, property_plant_and_equipment_EOF17, goodwill_EOF17, intangible_assets_EOF17, accumulated_amortisation_EOF17, other_assets_EOF17, defferred_long_term_asset_charges_EOF17, total_assets_EOF17, accounts_payable_EOF17, short_and_current_long_term_debt_EOF17, other_current_liabilities_EOF17, total_current_liabilities_EOF17, long_term_debt_EOF17, other_liabilities_EOF17, deferred_long_term_liability_charges_EOF17, minority_interest_EOF17, negative_goodwill_EOF17, total_liabilities_EOF17, misc_stock_options_warrants_EOF17, redeemable_preferred_stock_EOF17, preferred_stock_EOF17, common_stock_EOF17, retained_earnings_EOF17, treasury_stock_EOF17, capital_surplus_EOF17, other_stockholder_equity_EOF17, total_stockholder_equity_EOF17, net_tangible_assets_EOF17,
+        cash_and_cash_equivalents_EOF16, short_term_investments_EOF16, Net_receivables_EOF16, inventory_EOF16, other_current_assets_EOF16, total_current_assets_EOF16, long_term_investments_EOF16, property_plant_and_equipment_EOF16, goodwill_EOF16, intangible_assets_EOF16, accumulated_amortisation_EOF16, other_assets_EOF16, defferred_long_term_asset_charges_EOF16, total_assets_EOF16, accounts_payable_EOF16, short_and_current_long_term_debt_EOF16, other_current_liabilities_EOF16, total_current_liabilities_EOF16, long_term_debt_EOF16, other_liabilities_EOF16, deferred_long_term_liability_charges_EOF16, minority_interest_EOF16, negative_goodwill_EOF16, total_liabilities_EOF16, misc_stock_options_warrants_EOF16, redeemable_preferred_stock_EOF16, preferred_stock_EOF16, common_stock_EOF16, retained_earnings_EOF16, treasury_stock_EOF16, capital_surplus_EOF16, other_stockholder_equity_EOF16, total_stockholder_equity_EOF16, net_tangible_assets_EOF16,
+        cash_and_cash_equivalents_EOF15, short_term_investments_EOF15, Net_receivables_EOF15, inventory_EOF15, other_current_assets_EOF15, total_current_assets_EOF15, long_term_investments_EOF15, property_plant_and_equipment_EOF15, goodwill_EOF15, intangible_assets_EOF15, accumulated_amortisation_EOF15, other_assets_EOF15, defferred_long_term_asset_charges_EOF15, total_assets_EOF15, accounts_payable_EOF15, short_and_current_long_term_debt_EOF15, other_current_liabilities_EOF15, total_current_liabilities_EOF15, long_term_debt_EOF15, other_liabilities_EOF15, deferred_long_term_liability_charges_EOF15, minority_interest_EOF15, negative_goodwill_EOF15, total_liabilities_EOF15, misc_stock_options_warrants_EOF15, redeemable_preferred_stock_EOF15, preferred_stock_EOF15, common_stock_EOF15, retained_earnings_EOF15, treasury_stock_EOF15, capital_surplus_EOF15, other_stockholder_equity_EOF15, total_stockholder_equity_EOF15, net_tangible_assets_EOF15,
+        ])
+
+
+#Stop code from running in jyupter notebooks automatically 
+if __name__ == '__main__':
+    main()
